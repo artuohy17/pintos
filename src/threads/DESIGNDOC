@@ -62,13 +62,20 @@ By keeping the sleeping list sorted, timer_interrupt() doesn't need to traverse 
 >> A4: How are race conditions avoided when multiple threads call
 >> timer_sleep() simultaneously?
 
+Race conditions are avoided during simultaneous timer_sleep() calls by turning interrupts off while the sleep_ticks are calculated and added into sleeping. 
+
 >> A5: How are race conditions avoided when a timer interrupt occurs
 >> during a call to timer_sleep()?
+
+Race contiions are avoided during timer interrupt because interrupts are disabled while values are being added to sleeping list so no race conditions can  be created.
 
 ---- RATIONALE ----
 
 >> A6: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
+
+We chose this design as a way to reimplement the timer_sleep() function without using busy-waiting. By putting threads to sleep for a certain number of ticks and then adding it to a list with the other sleeping threads we can use the timer_interrupt to determine which threads are ready to wake up and then unblock them. 
+
 
              PRIORITY SCHEDULING
              ===================
