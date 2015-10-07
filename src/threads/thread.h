@@ -89,9 +89,13 @@ struct thread
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
     struct list_elem allelem;           /* List element for all threads list. */
-    int64_t sleep_ticks;                /* Ticks used by timersleep */
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
+
+
+    int64_t sleep_ticks;                /* Ticks used in timersleep to indicate 
+                                           when thread is done sleeping. */
+    
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
