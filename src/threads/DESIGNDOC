@@ -7,6 +7,7 @@
 ---- GROUP ----
 
 >> Fill in the names and email addresses of your group members.
+TEAM: JAX
 
 Alec Tuohy <alectuoh@buffalo.edu>
 Darryl Forconi <darrylfo@buffalo.edu>
@@ -49,27 +50,50 @@ Added a list to timer.c:
 >> A2: Briefly describe what happens in a call to timer_sleep(),
 >> including the effects of the timer interrupt handler.
 
-In the call to timer_sleep(), interrupts are disabled while the sleep_ticks variable is set equal to ticks (time thread is supposed to sleep) plus start (timer ticks since OS booted). The current thread is then added into sleeping (sorted list of sleeping threads) in the correct postion and blocked. In timer_interrupt() sleeping will be traversed and any thread with a sleep_ticks value less than timer_ticks() will be unblocked and removed from sleeping.
+In the call to timer_sleep(), interrupts are disabled while the 
+sleep_ticks variable is set equal to ticks (time thread is supposed 
+to sleep) plus start (timer ticks since OS booted). The current 
+thread is then added into sleeping (sorted list of sleeping threads) 
+in the correct postion and blocked. In timer_interrupt() sleeping will
+be traversed and any thread with a sleep_ticks value less than 
+timer_ticks() will be unblocked and removed from sleeping.
 
 
 >> A3: What steps are taken to minimize the amount of time spent in
 >> the timer interrupt handler?
 
-By keeping the sleeping list sorted, timer_interrupt() doesn't need to traverse through the entire list it only needs to go as far as the first thread whose sleep_ticks is greater than timer_ticks(). Once it finds that thread it can stop its traversal which minimized the amount of time spent in the timer interrupt handler.
+By keeping the sleeping list sorted, timer_interrupt() doesn't need to 
+traverse through the entire list it only needs to go as far as the first 
+thread whose sleep_ticks is greater than timer_ticks(). Once it finds 
+that thread it can stop its traversal which minimized the amount of time
+spent in the timer interrupt handler.
 
 ---- SYNCHRONIZATION ----
 
 >> A4: How are race conditions avoided when multiple threads call
 >> timer_sleep() simultaneously?
 
+Interrupts are disabled because ready and sleeers_ lists are modified in the 
+interrupt handler. 
+
 >> A5: How are race conditions avoided when a timer interrupt occurs
 >> during a call to timer_sleep()?
+
+Interrupts are disable to prevent the sleepers_list from being unstable when 
+timer_interrupt occurs. 
 
 ---- RATIONALE ----
 
 >> A6: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
 
+We considered having the sleeping list unsorted because this would make 
+adding the sleeping threads more efficient, but then most time would be 
+spent traversing the list to awake the sleeping threads. Also, much more
+time would be spent in the interrupt handler which would cause problems 
+with a high number of sleeping threads. The run time would be comprimised 
+with this implementation.
+ 
              PRIORITY SCHEDULING
              ===================
 
@@ -79,20 +103,66 @@ By keeping the sleeping list sorted, timer_interrupt() doesn't need to traverse 
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+thead.h
+
+int initial_priority; number of donations, returns to 0 after all donations have occured
+
+struct thread *want_lock; threads waiting on locks
+
+int base_priority; original priority before donations
+
+struct lock *waiting_lock; lock that must be completed prior to the thread acquiring the lock
+ 
 >> B2: Explain the data structure used to track priority donation.
 >> Use ASCII art to diagram a nested donation.  (Alternately, submit a
 >> .png file.)
+
+L1, L2, L3 - Locks
+T1, T2, T3, T4 - Threads
+
+	L1
+T1-->		L2
+T2--> T3--> T4
+	L3
+
+T3 donation list = (T1, T2)
+T4 donation list = (T3)
+
+T3 priority = max(T1, T2, T3)
+T4 priority = max(T4, T3)
+
+T3 waiting lock = (L2)
+T4 waiting lock = (NULL)
 
 ---- ALGORITHMS ----
 
 >> B3: How do you ensure that the highest priority thread waiting for
 >> a lock, semaphore, or condition variable wakes up first?
 
+Everytime donation is received it gets reordered in the list so that the first element
+in the threads list has highest priorty. 
+
 >> B4: Describe the sequence of events when a call to lock_acquire()
 >> causes a priority donation.  How is nested donation handled?
 
+When lock_acquire() is called:
+
+1) Lock is free
+	Update the holder to reference the current thread, decrease semaphore value. Return.
+2)Lock is held, requester has lower priorty
+	set want_lock to current lock holder, once lock is free (lock_release), in lock_acquire() set the want_lock to NULL.
+	set the holder to have reference to the current thread. Return.
+3)Lock is held, requester has higher priorty
+	Priorty Donation. Store previous priorty of the holder, check if current holder is null and if lock that is waiting
+	on is !NULL, if true, nested priority donation occurs on the lock that is waiting on. Nesting complete, update the 
+	priorty changed in the list, set want_lock() and wait for lock to be free.
+
 >> B5: Describe the sequence of events when lock_release() is called
 >> on a lock that a higher-priority thread is waiting for.
+
+The holder is set to NULL, removes the thread' waiting on the lock released off the current thread list. Priority donation is gone
+once lock released. Increment the semaphore value. Following lock_release() return, lock_acquire() will reset all priorities. Find
+highest priority on thread's list. Highest priority thread acquires the released lock. If current thread has highest priorty, continue.
 
 ---- SYNCHRONIZATION ----
 
