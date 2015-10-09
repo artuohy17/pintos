@@ -85,14 +85,10 @@ Race contiions are avoided during timer interrupt because interrupts are disable
 >> A6: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
 
-We considered having the sleeping list unsorted because this would make 
-adding the sleeping threads more efficient, but then most time would be 
-spent traversing the list to awake the sleeping threads. Also, much more
-time would be spent in the interrupt handler which would cause problems 
-with a high number of sleeping threads. The run time would be comprimised 
-with this implementation.
-
-We chose this design as a way to reimplement the timer_sleep() function without using busy-waiting. By putting threads to sleep for a certain number of ticks and then adding it to a list with the other sleeping threads we can use the timer_interrupt to determine which threads are ready to wake up and then unblock them. 
+We chose this design as a way to reimplement the timer_sleep() function 
+without using busy-waiting. By putting threads to sleep for a certain number
+of ticks and then adding it to a list with the other sleeping threads we can 
+use the timer_interrupt to determine which threads are ready to wake up and then unblock them. 
              PRIORITY SCHEDULING
              ===================
 
@@ -169,10 +165,18 @@ highest priority on thread's list. Highest priority thread acquires the released
 >> how your implementation avoids it.  Can you use a lock to avoid
 >> this race?
 
+A race condition could occur when multiple threads are attempting to set priority at the same time
+or the donation value is changed after it has already been checked. Avoiding race conditions will be 
+done by disabling interrupts for the entire duration of the funtion that is updating the priority.
+
 ---- RATIONALE ----
 
 >> B7: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
+
+Seeing as those all tests rely on lock_acquire and lock_release, we will
+be able to simplify code with data structures and general implementation
+by adding code in those areas. 
 
               ADVANCED SCHEDULER
               ==================
