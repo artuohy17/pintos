@@ -166,8 +166,9 @@ highest priority on thread's list. Highest priority thread acquires the released
 >> this race?
 
 A race condition could occur when multiple threads are attempting to set priority at the same time
-or the donation value is changed after it has already been checked. Avoiding race conditions will be 
-done by disabling interrupts for the entire duration of the funtion that is updating the priority.
+or the donation value is changed after it has already been checked. Avoiding race conditions could be 
+done using a lock. A lock that all interrupts would need to acquire would avoid this race condition.
+thread_set_priorty() would also acquire this lock to stop multiple priorirty changes.
 
 ---- RATIONALE ----
 
@@ -187,6 +188,15 @@ by adding code in those areas.
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+struct
+
+	int nice; //value of nice
+	int cpu_time //value of cpu time acquired
+
+thread.c 
+	
+	int load; //load average value
+
 ---- ALGORITHMS ----
 
 >> C2: Suppose threads A, B, and C have nice values 0, 1, and 2.  Each
@@ -197,23 +207,37 @@ by adding code in those areas.
 timer  recent_cpu    priority   thread
 ticks   A   B   C   A   B   C   to run
 -----  --  --  --  --  --  --   ------
- 0
- 4
- 8
-12
-16
-20
-24
-28
-32
-36
+ 0     0    0   0  63  61  59     A
+ 4     4    0   0  62  61  59     A
+ 8     8    0   0  61  61  59     B
+12     8    4   0  61  60  59     A
+16     12   4   0  60  60  59     B
+20     12   8   0  60  59  59     A
+24     16   8   0  59  59  59     C
+28     16   8   4  59  59  58     B
+32     16   12  4  59  58  58     A
+36     20   12  4  58  58  58     C
 
 >> C3: Did any ambiguities in the scheduler specification make values
 >> in the table uncertain?  If so, what rule did you use to resolve
 >> them?  Does this match the behavior of your scheduler?
 
+It is unclear which thread is supposed to be running first. If the thread
+that has a higher priority and is highest running priority then it continues
+to run. If the scheduler has to choose between matched priorities, it chooses 
+the thread that has run the least recently. This behavior matches our scheduler.
+
 >> C4: How is the way you divided the cost of scheduling between code
 >> inside and outside interrupt context likely to affect performance?
+
+Due to the fact that most of the scheduling is doen inside the interrupt handler.
+The only value that changes, is the recent_cpu due to the timer ticks. However,
+after every second, the load average, recent_cpu and priority all have to be recalculated.
+With a system that has a lot of threads running, this could be expensive and would
+affect performance negatively. The value that is found outside of the interrupt handler
+would be the nice value. This is done while the interrupt handler is locked because changing
+the nice value also resets the priority. Priority is read and written inside the interrupt
+handler.
 
 ---- RATIONALE ----
 
@@ -222,12 +246,23 @@ ticks   A   B   C   A   B   C   to run
 >> time to work on this part of the project, how might you choose to
 >> refine or improve your design?
 
+Advantages:
+	We did not add many variables which addds to easier reading of the code
+	and a somewhat simpler implementation.
+
+Disadvantages:
+	May try to better implement locks. Make sure there is no overflow in 
+	the values of load, recent_cpu. 
+
 >> C6: The assignment explains arithmetic for fixed-point math in
 >> detail, but it leaves it open to you to implement it.  Why did you
 >> decide to implement it the way you did?  If you created an
 >> abstraction layer for fixed-point math, that is, an abstract data
 >> type and/or a set of functions or macros to manipulate fixed-point
 >> numbers, why did you do so?  If not, why not?
+
+	Implementing fixed-point in the header file. Using the fixed-point 
+	allowed for better readability of the code when calculating values. 
 
                SURVEY QUESTIONS
                ================
@@ -241,14 +276,25 @@ the quarter.
 >> In your opinion, was this assignment, or any one of the three problems
 >> in it, too easy or too hard?  Did it take too long or too little time?
 
+I feel like they were just right. Kind of hard to understand at first
+but after reading through the files, we were able to implement a design.
+
 >> Did you find that working on a particular part of the assignment gave
 >> you greater insight into some aspect of OS design?
+
+A lot goes into synchronization. The kernal developers using multi-level 
+processors are skilled in synchronizing threads.
 
 >> Is there some particular fact or hint we should give students in
 >> future quarters to help them solve the problems?  Conversely, did you
 >> find any of our guidance to be misleading?
 
+A powerful hint per aspect in the project would be helpful for where
+to start and a bit of how it should be implemented would be helpful.
+
 >> Do you have any suggestions for the TAs to more effectively assist
 >> students, either for future quarters or the remaining projects?
+
+More project implementation in recitation.
 
 >> Any other comments?
