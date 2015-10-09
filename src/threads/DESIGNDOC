@@ -1,5 +1,5 @@
             +--------------------+
-            |                    |
+            |       CSE421       |
             | PROJECT 1: THREADS |
             |   DESIGN DOCUMENT  |
             +--------------------+
@@ -54,7 +54,7 @@ In the call to timer_sleep(), interrupts are disabled while the
 sleep_ticks variable is set equal to ticks (time thread is supposed 
 to sleep) plus start (timer ticks since OS booted). The current 
 thread is then added into sleeping (sorted list of sleeping threads) 
-in the correct postion and blocked. In timer_interrupt() sleeping will
+in the correct position and blocked. In timer_interrupt() sleeping will
 be traversed and any thread with a sleep_ticks value less than 
 timer_ticks() will be unblocked and removed from sleeping.
 
@@ -78,7 +78,7 @@ Race conditions are avoided during simultaneous timer_sleep() calls by turning i
 >> A5: How are race conditions avoided when a timer interrupt occurs
 >> during a call to timer_sleep()?
 
-Race contiions are avoided during timer interrupt because interrupts are disabled while values are being added to sleeping list so no race conditions can  be created.
+Race conditions are avoided during timer interrupt because interrupts are disabled while values are being added to sleeping list so no race conditions can be created.
 
 ---- RATIONALE ----
 
@@ -88,7 +88,7 @@ Race contiions are avoided during timer interrupt because interrupts are disable
 We chose this design as a way to reimplement the timer_sleep() function 
 without using busy-waiting. By putting threads to sleep for a certain number
 of ticks and then adding it to a list with the other sleeping threads we can 
-use the timer_interrupt to determine which threads are ready to wake up and then unblock them. 
+use the timer_interrupt to determine which threads are ready to wake up and then unblock them.
              PRIORITY SCHEDULING
              ===================
 
@@ -98,9 +98,9 @@ use the timer_interrupt to determine which threads are ready to wake up and then
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
-thead.h
+thread.h
 
-int initial_priority; number of donations, returns to 0 after all donations have occured
+int initial_priority; number of donations, returns to 0 after all donations have occurred
 
 struct thread *want_lock; threads waiting on locks
 
@@ -135,29 +135,29 @@ T4 waiting lock = (NULL)
 >> a lock, semaphore, or condition variable wakes up first?
 
 Everytime donation is received it gets reordered in the list so that the first element
-in the threads list has highest priorty. 
+in the threads list has highest priority. 
 
 >> B4: Describe the sequence of events when a call to lock_acquire()
 >> causes a priority donation.  How is nested donation handled?
 
 When lock_acquire() is called:
 
-1) Lock is free
+1)Lock is free
 	Update the holder to reference the current thread, decrease semaphore value. Return.
-2)Lock is held, requester has lower priorty
+2)Lock is held, requester has lower priority
 	set want_lock to current lock holder, once lock is free (lock_release), in lock_acquire() set the want_lock to NULL.
 	set the holder to have reference to the current thread. Return.
-3)Lock is held, requester has higher priorty
-	Priorty Donation. Store previous priorty of the holder, check if current holder is null and if lock that is waiting
+3)Lock is held, requester has higher priority
+	Priority Donation. Store previous priority of the holder, check if current holder is null and if lock that is waiting
 	on is !NULL, if true, nested priority donation occurs on the lock that is waiting on. Nesting complete, update the 
-	priorty changed in the list, set want_lock() and wait for lock to be free.
+	priority changed in the list, set want_lock() and wait for lock to be free.
 
 >> B5: Describe the sequence of events when lock_release() is called
 >> on a lock that a higher-priority thread is waiting for.
 
 The holder is set to NULL, removes the thread' waiting on the lock released off the current thread list. Priority donation is gone
 once lock released. Increment the semaphore value. Following lock_release() return, lock_acquire() will reset all priorities. Find
-highest priority on thread's list. Highest priority thread acquires the released lock. If current thread has highest priorty, continue.
+highest priority on thread's list. Highest priority thread acquires the released lock. If current thread has highest priority, continue.
 
 ---- SYNCHRONIZATION ----
 
@@ -168,14 +168,14 @@ highest priority on thread's list. Highest priority thread acquires the released
 A race condition could occur when multiple threads are attempting to set priority at the same time
 or the donation value is changed after it has already been checked. Avoiding race conditions could be 
 done using a lock. A lock that all interrupts would need to acquire would avoid this race condition.
-thread_set_priorty() would also acquire this lock to stop multiple priorirty changes.
+thread_set_priorty() would also acquire this lock to stop multiple priority changes.
 
 ---- RATIONALE ----
 
 >> B7: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
 
-Seeing as those all tests rely on lock_acquire and lock_release, we will
+Seeing as all those tests rely on lock_acquire and lock_release, we will
 be able to simplify code with data structures and general implementation
 by adding code in those areas. 
 
@@ -230,8 +230,8 @@ the thread that has run the least recently. This behavior matches our scheduler.
 >> C4: How is the way you divided the cost of scheduling between code
 >> inside and outside interrupt context likely to affect performance?
 
-Due to the fact that most of the scheduling is doen inside the interrupt handler.
-The only value that changes, is the recent_cpu due to the timer ticks. However,
+Due to the fact that most of the scheduling is done inside the interrupt handler,
+the only value that changes is the recent_cpu due to the timer ticks. However,
 after every second, the load average, recent_cpu and priority all have to be recalculated.
 With a system that has a lot of threads running, this could be expensive and would
 affect performance negatively. The value that is found outside of the interrupt handler
@@ -247,7 +247,7 @@ handler.
 >> refine or improve your design?
 
 Advantages:
-	We did not add many variables which addds to easier reading of the code
+	We did not add many variables which adds to easier reading of the code
 	and a somewhat simpler implementation.
 
 Disadvantages:
