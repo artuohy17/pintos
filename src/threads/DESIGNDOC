@@ -63,7 +63,7 @@ timer_ticks() will be unblocked and removed from sleeping.
 >> the timer interrupt handler?
 
 By keeping the sleeping list sorted, timer_interrupt() doesn't need to 
-traverse through the entire list it only needs to go as far as the first 
+traverse through the entire list; it only needs to go as far as the first 
 thread whose sleep_ticks is greater than timer_ticks(). Once it finds 
 that thread it can stop its traversal which minimized the amount of time
 spent in the timer interrupt handler.
