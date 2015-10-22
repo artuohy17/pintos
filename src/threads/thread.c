@@ -59,7 +59,7 @@ static unsigned thread_ticks;   /* # of timer ticks since last yield. */
    Controlled by kernel command-line option "-o mlfqs". */
 bool thread_mlfqs;
 
-int load_avg;
+fixed_t load_avg;
 
 static void kernel_thread (thread_func *, void *aux);
 
@@ -400,6 +400,14 @@ thread_get_recent_cpu (void)
   /* Not yet implemented. */
   return 0;
 }
+void thread_test_preemption(void){
+    enum intr_level old_level = intr_disable();
+    if(!list_empty(&ready_list) && 
+       thread_current->priority < list_entry(list_front(&ready_list,
+            struct thread, elem)->priority)
+      thread_yield();
+    intr_set_level(old_level);
+}
 void thread_mlfqs_increment(void){
     ASSERT(thread_mlfqs);
     ASSERT(intr_context());
@@ -414,9 +422,9 @@ void thread_mlfqs_cpu(struct thread *t){
    ASSERT(t != idel_thread);
 
    int term1 = mult_mixed(load_avg, 2);
-   term1 = div_fp(term1, add_mixed(term1, 1));
-   term1 = mul_fp(term1, t->recent_cpu);
-   t->recent_cpu = add_mixed(term1, t->nice);
+   term1 = FP_DIV(term1, add_mixed(term1, 1));
+   term1 = FP_MULT(term1, t->recent_cpu);
+   t->recent_cpu = FP_ADD_MIX(term1, t->nice);
 }
 void thread_mlfqs_update(struct thread *t){
     if(t == idle_thread)

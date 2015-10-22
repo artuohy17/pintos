@@ -4,7 +4,7 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
-
+#include "fixed_point.h"
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -145,6 +145,7 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
+void thread_test_preemption(void);
 void thread_mlfqs_increment(void);
 void thread_mlfqs_priorty(struct thread *);
 void thread_mlfqs_cpu(struct thread *);
