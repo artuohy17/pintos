@@ -86,21 +86,28 @@ timer_elapsed (int64_t then)
 {
   return timer_ticks () - then;
 }
-
 /* Sleeps for approximately TICKS timer ticks.  Interrupts must
    be turned on. */
 void
 timer_sleep (int64_t ticks) 
 {
   int64_t start = timer_ticks ();
-
+  enum intr_level old_level;
   ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+
+  if(ticks <= 0)
+     return;
+
+  old_level = intr_disable();
+  struct thread *cur = thread_current();
+  cur->sleep_ticks = start + ticks;
+  list_insert_ordered(&sleeping, &cur->elem, thread_wake, NULL);
+  thread_block();
+  intr_set_level(old_level);
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
-   turned on. */
+  turned on. */
 void
 timer_msleep (int64_t ms) 
 {
@@ -174,6 +181,25 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
+
+  if(thread_mlfqs){ //scheduler
+    thread_mlfqs_incr_recent_cpu();
+    if(ticks % TIMER_FREQ == 0)
+       thread_mlfqs_refresh();
+    else if(ticks % 4 ==0)
+       thread_mlfqs_update_priorty(thread_current());
+  }
+  //check and wake up sleeping threads
+  struct thread *cur;
+  while(!list_empty(&sleeeping)){
+       cur = list_entry(list_begin(&sleeping), struct thread, elem);
+       if(cur->wakeup_time <= ticks){
+           list_remove(&cur->elem);
+           thread_unblock(cur);
+       }
+       else break;
+  }
+
   thread_tick ();
 }
 
@@ -246,4 +272,10 @@ real_time_delay (int64_t num, int32_t denom)
      the possibility of overflow. */
   ASSERT (denom % 1000 == 0);
   busy_wait (loops_per_tick * num / 1000 * TIMER_FREQ / (denom / 1000)); 
+}
+bool thread_wake(cons struct list_elem *a_list, 
+      const struct list_elem *b_list, void *aux) {
+   const struct thread *a = list_entry(a_list, struct thread, timer_list_elem);
+   const struct thread *b = list_entry(b_list, struct thread, timer_list_elem);
+   return a->wakeup_time <= b->wakeup_time;
 }
