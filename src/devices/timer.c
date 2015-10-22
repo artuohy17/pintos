@@ -193,7 +193,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
   struct thread *cur;
   while(!list_empty(&sleeeping)){
        cur = list_entry(list_begin(&sleeping), struct thread, elem);
-       if(cur->wakeup_time <= ticks){
+       if(cur->sleep_ticks <= ticks){
            list_remove(&cur->elem);
            thread_unblock(cur);
        }
@@ -277,5 +277,5 @@ bool thread_wake(cons struct list_elem *a_list,
       const struct list_elem *b_list, void *aux) {
    const struct thread *a = list_entry(a_list, struct thread, timer_list_elem);
    const struct thread *b = list_entry(b_list, struct thread, timer_list_elem);
-   return a->wakeup_time <= b->wakeup_time;
+   return a->sleep_ticks <= b->sleep_ticks;
 }
