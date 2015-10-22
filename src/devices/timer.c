@@ -92,16 +92,15 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
-  int64_t start = timer_ticks ();
   enum intr_level old_level;
   ASSERT (intr_get_level () == INTR_ON);
 
   if(ticks <= 0)
-     return;
+    return;
 
   old_level = intr_disable();
   struct thread *cur = thread_current();
-  cur->sleep_ticks = start + ticks;
+  cur->sleep_ticks = timer_ticks() + ticks;
   list_insert_ordered(&sleeping, &cur->elem, thread_wake, NULL);
   thread_block();
   intr_set_level(old_level);
@@ -182,6 +181,10 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
+  thread_tick();
+  struct list_elem *le;
+  struct thread *t;
+  bool preempt = false;
 
   if(thread_mlfqs){ //scheduler
     thread_mlfqs_increment();
@@ -191,17 +194,20 @@ timer_interrupt (struct intr_frame *args UNUSED)
        thread_mlfqs_priority(thread_current());
   }
   //check and wake up sleeping threads
-  struct thread *cur;
+  
   while(!list_empty(&sleeping)){
-       cur = list_entry(list_begin(&sleeping), struct thread, elem);
-       if(cur->sleep_ticks <= ticks){
-           list_remove(&cur->elem);
-           thread_unblock(cur);
+       le = list_front(&sleeping);
+       t = list_entry(le, struct thread, elem);
+       if(t->sleep_ticks <= ticks){
+           list_remove(le);
+           thread_unblock(t);
+           preempt = true;
        }
        else break;
   }
 
-  thread_tick ();
+  if(preempt)
+     intr_yield_on_return();
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
