@@ -391,7 +391,7 @@ void thread_donate_priority(struct thread *t){
     if(t->status == THREAD_READY){
       list_remove(&t->elem);
       list_insert_ordered(&ready_list, &t->elem,
-                          thread_priority_large, NULL);
+                          comp_thread_priority, NULL);
     }
     intr_set_level(old_level);
 }
@@ -701,6 +701,21 @@ allocate_tid (void)
 
   return tid;
 }
+bool comp_thread_priority(const struct list_elem *a,
+                          const struct list_elem *b,
+                          void *aux UNUSED){
+   struct thread *t1 = list_entry(a, struct thread, elem);
+   struct thread *t2 = list_entry(b, struct thread, elem);
+   return t1->priority < t2->priority;
+}
+
+bool thread_wake(const struct list_elem *a, 
+                 const struct list_elem *b,
+                 void *aux UNUSED){
+   struct thread *t1 = list_entry(a, struct thread, elem);
+   struct thread *t2 = list_entry(b, struct thread, elem);
+   return t1->sleep_ticks < t2->sleep_ticks;
+}  
 
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
