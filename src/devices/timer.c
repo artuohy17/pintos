@@ -86,6 +86,13 @@ timer_elapsed (int64_t then)
 {
   return timer_ticks () - then;
 }
+bool thread_wake(cons struct list_elem *a_list,
+      const struct list_elem *b_list, void *aux) {
+   const struct thread *a = list_entry(a_list, struct thread, timer_list_elem);
+   const struct thread *b = list_entry(b_list, struct thread, timer_list_elem);
+   return a->sleep_ticks <= b->sleep_ticks;
+}
+     
 /* Sleeps for approximately TICKS timer ticks.  Interrupts must
    be turned on. */
 void
@@ -191,7 +198,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
   }
   //check and wake up sleeping threads
   struct thread *cur;
-  while(!list_empty(&sleeeping)){
+  while(!list_empty(&sleeping)){
        cur = list_entry(list_begin(&sleeping), struct thread, elem);
        if(cur->sleep_ticks <= ticks){
            list_remove(&cur->elem);
@@ -273,7 +280,7 @@ real_time_delay (int64_t num, int32_t denom)
   ASSERT (denom % 1000 == 0);
   busy_wait (loops_per_tick * num / 1000 * TIMER_FREQ / (denom / 1000)); 
 }
-bool thread_wake(cons struct list_elem *a_list, 
+bool thread_wake(const struct list_elem *a_list, 
       const struct list_elem *b_list, void *aux) {
    const struct thread *a = list_entry(a_list, struct thread, timer_list_elem);
    const struct thread *b = list_entry(b_list, struct thread, timer_list_elem);
