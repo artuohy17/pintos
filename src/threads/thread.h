@@ -97,8 +97,7 @@ struct thread
     fixed_t recent_cpu;
     int64_t sleep_ticks;                /* Ticks used in timersleep to indicate 
                                            when thread is done sleeping. */
-    struct lock *want_lock;           /* threads waiting on locks */
-    struct lock *waiting_lock;          /* lock that must be completed */    
+    struct lock *want_lock;           /* threads waiting on locks */    
     struct list locks;
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -118,7 +117,7 @@ void thread_start (void);
 
 void thread_tick (void);
 void thread_print_stats (void);
-int nice;                              /*nice value*/
+
 typedef void thread_func (void *aux);
 tid_t thread_create (const char *name, int priority, thread_func *, void *);
 

@@ -185,7 +185,6 @@ timer_interrupt (struct intr_frame *args UNUSED)
   thread_tick();
   struct list_elem *le;
   struct thread *t;
-  bool preempt = false;
 
   if(thread_mlfqs){ //scheduler
     thread_mlfqs_increment();
@@ -202,13 +201,9 @@ timer_interrupt (struct intr_frame *args UNUSED)
        if(t->sleep_ticks <= ticks){
            list_remove(le);
            thread_unblock(t);
-           preempt = true;
        }
        else break;
   }
-
-  if(preempt)
-     intr_yield_on_return();
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
