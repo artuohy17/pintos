@@ -95,7 +95,10 @@ struct thread
 
     int64_t sleep_ticks;                /* Ticks used in timersleep to indicate 
                                            when thread is done sleeping. */
-    
+    int initial_priorty:                /*number of donations*/
+    int base_priorty;                   /* original priority before donations */
+    struct thread *want_lock;           /* threads waiting on locks */
+    struct lock *waiting_lock;          /* lock that must be completed */    
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -142,4 +145,8 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
+void thread_mlfqs_increment(void);
+void thread_mlfqs_priorty(struct thread *);
+void thread_mlfqs_cpu(struct thread *);
+void thread_mlfqs_refresh_priorty(void);
 #endif /* threads/thread.h */
