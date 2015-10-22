@@ -88,6 +88,8 @@ struct thread
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
+    int base_priority;                  /* original priority before donations */
+    int initial_priority;               /* number of donations */
     struct list_elem allelem;           /* List element for all threads list. */
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -95,8 +97,6 @@ struct thread
 
     int64_t sleep_ticks;                /* Ticks used in timersleep to indicate 
                                            when thread is done sleeping. */
-   // int initial_priorty:                /*number of donations*/
-   // int base_priorty;                   /* original priority before donations */
     struct thread *want_lock;           /* threads waiting on locks */
     struct lock *waiting_lock;          /* lock that must be completed */    
 
@@ -108,7 +108,8 @@ struct thread
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
   };
-
+  int base_priority;
+  int initial_priority;
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
@@ -149,4 +150,8 @@ void thread_mlfqs_increment(void);
 void thread_mlfqs_priorty(struct thread *);
 void thread_mlfqs_cpu(struct thread *);
 void thread_mlfqs_refresh_priorty(void);
+
+bool thread_wake(const struct list_elem *,
+                 const struct list_elem *,
+                 void *);
 #endif /* threads/thread.h */

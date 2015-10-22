@@ -343,7 +343,22 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
+  if(thread_mlfqs)
+    return;
+  enum intr_level old_level = intr_disable();
+  int old_priority = thread_current()->priority;
   thread_current ()->priority = new_priority;
+ 
+  thread_current()->base_priority = new_priority;
+  /*update priority and test preemption if new priority
+    is smaller and the current priority is not donated to 
+    another thread */
+  if(new_priority < old_priority)
+    {
+       thread_current()->priority = new_priority;
+       thread_test_preemption();
+   } 
+   intr_set_level(old_level);
 }
 
 /* Returns the current thread's priority. */
@@ -383,6 +398,60 @@ thread_get_recent_cpu (void)
   /* Not yet implemented. */
   return 0;
 }
+void thread_mlfqs_increment(void){
+    ASSERT(thread_mlfqs);
+    ASSERT(intr_context());
+
+    struct thread *cur = thread_current();
+    if(cur == idle_thread)
+      return;
+    cur->recent_cpu = FP_ADD_MIX(cur->recent_cpu, 1);
+}
+void thread_mlfqs_cpu(struct thread *t){
+   ASSERT(thread_mlfqs);
+   ASSERT(t != idel_thread);
+
+   int term1 = mult_mixed(load_avg, 2);
+   term1 = div_fp(term1, add_mixed(term1, 1));
+   term1 = mul_fp(term1, t->recent_cpu);
+   t->recent_cpu = add_mixed(term1, t->nice);
+}
+void thread_mlfqs_update(struct thread *t){
+    if(t == idle_thread)
+      return;
+
+    ASSERT(thread_mlfqs);
+    ASSERT(t != idle_thread);
+
+   fixed_t new_priority = FP_CONST(PRI_MAX);
+   new_priority = FP_SUB(new_priority, FP_DIV_MIX(t->recent_cpu, 4));
+   new_priority = FP_SUB_MIX(new priority, 2*t->nice);
+   t->priority = FP_INT_PART(new_priority);
+   if(t->priority < PRI_MIN)
+     t->priority = PRI_MIN;
+   else if(t->priority > PRI_MAX)
+     t->priority = PRI_MAX;
+}
+void thread_mlfqs_refresh(void){
+    ASSERT(thead_mlfqs);
+    ASSERT(intr_context());
+
+    size_t ready_t = list_size(&ready_list);
+    if(thread_current() != idle_thread)
+      ready_threads++;
+    load_avg = FP_ADD(FP_DIV_MIX(FP_MULT_MIX(load_avg, 59), 60),
+               FP_DIV_MIX(FP_CONST(ready_threads), 60));
+
+    struct thread *t;
+    struct list_elem *e = list_begin(&all_ist);
+    for(; e!= list_end(&all_list); e = list_next(e)){
+        t = list_entry(e, struct thread, allelem);
+        if(t != idle_thread){
+          thread_mlfqs_cpu(t);
+          thread_mlfqs_update(t);
+        }
+    }
+} 
 
 /* Idle thread.  Executes when no other thread is ready to run.
 
