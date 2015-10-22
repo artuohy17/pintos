@@ -99,7 +99,7 @@ struct thread
                                            when thread is done sleeping. */
     struct thread *want_lock;           /* threads waiting on locks */
     struct lock *waiting_lock;          /* lock that must be completed */    
-
+    struct list locks;
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
@@ -154,6 +154,9 @@ void thread_mlfqs_priority(struct thread *);
 void thread_mlfqs_cpu(struct thread *);
 void thread_mlfqs_refresh(void);
 
+bool comp_thread_priority(const struct list_elem *,
+                          const struct list_elem *,
+                          void *);
 bool thread_wake(const struct list_elem *,
                  const struct list_elem *,
                  void *);
