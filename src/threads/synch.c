@@ -201,8 +201,8 @@ lock_acquire (struct lock *lock)
   if(!thread_mlfqs && lock->holder != NULL){
      thread_current()->want_lock = lock;
      l1 = lock;
-     while(l1 && thread_current()->priority > l1->max_priority){
-         l1->max_priority = thread_current()-> priority;
+     while(l1 && thread_current()->base_priority > l1->max_priority){
+         l1->max_priority = thread_current()->base_priority;
          thread_donate_priority(l1->holder);
          l1 = l1->holder->want_lock;
      }
@@ -212,7 +212,7 @@ lock_acquire (struct lock *lock)
   old_level = intr_disable();
   if(!thread_mlfqs){
      thread_current()->want_lock = NULL;
-     lock->max_priority = thread_current()-> priority();
+     lock->max_priority = thread_current()-> base_priority();
      thread_add_lcok(lock);
   }
   lock->holder = thread_current();
