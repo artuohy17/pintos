@@ -213,7 +213,7 @@ lock_acquire (struct lock *lock)
   old_level = intr_disable();
   if(!thread_mlfqs){
      cur->want_lock = NULL;
-     lock->max_priority = cur->priority();
+     lock->max_priority = cur->priority;
      thread_add_lock(lock);
   }
   lock->holder = cur;
