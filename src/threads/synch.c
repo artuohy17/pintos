@@ -196,13 +196,14 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
   enum intr_level old_level;
-  int depth = 0;
   struct lock *l1;
+  struct thread *cur = thread_current();
+
   if(!thread_mlfqs && lock->holder != NULL){
-     thread_current()->want_lock = lock;
+     cur->want_lock = lock;
      l1 = lock;
-     while(l1 && thread_current()->base_priority > l1->max_priority){
-         l1->max_priority = thread_current()->base_priority;
+     while(l1 && cur()->priority > l1->max_priority){
+         l1->max_priority = cur->priority;
          thread_donate_priority(l1->holder);
          l1 = l1->holder->want_lock;
      }
@@ -211,11 +212,11 @@ lock_acquire (struct lock *lock)
  
   old_level = intr_disable();
   if(!thread_mlfqs){
-     thread_current()->want_lock = NULL;
-     lock->max_priority = thread_current()-> base_priority();
-     thread_add_lcok(lock);
+     cur()->want_lock = NULL;
+     lock->max_priority = cur->priority();
+     thread_add_lock(lock);
   }
-  lock->holder = thread_current();
+  lock->holder = cur;
   intr_set_level(old_level);
 }
 

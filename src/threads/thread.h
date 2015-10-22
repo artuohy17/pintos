@@ -95,8 +95,8 @@ struct thread
 
     int64_t sleep_ticks;                /* Ticks used in timersleep to indicate 
                                            when thread is done sleeping. */
-    int initial_priorty:                /*number of donations*/
-    int base_priorty;                   /* original priority before donations */
+   // int initial_priorty:                /*number of donations*/
+   // int base_priorty;                   /* original priority before donations */
     struct thread *want_lock;           /* threads waiting on locks */
     struct lock *waiting_lock;          /* lock that must be completed */    
 
