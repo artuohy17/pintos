@@ -89,12 +89,11 @@ struct thread
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
     int base_priority;                  /* original priority before donations */
-    int initial_priority;               /* number of donations */
     struct list_elem allelem;           /* List element for all threads list. */
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
-
+    int recent_cpu;
     int64_t sleep_ticks;                /* Ticks used in timersleep to indicate 
                                            when thread is done sleeping. */
     struct thread *want_lock;           /* threads waiting on locks */
