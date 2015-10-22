@@ -183,11 +183,11 @@ timer_interrupt (struct intr_frame *args UNUSED)
   ticks++;
 
   if(thread_mlfqs){ //scheduler
-    thread_mlfqs_incr_recent_cpu();
+    thread_mlfqs_increment();
     if(ticks % TIMER_FREQ == 0)
        thread_mlfqs_refresh();
     else if(ticks % 4 ==0)
-       thread_mlfqs_update_priorty(thread_current());
+       thread_mlfqs_priorty(thread_current());
   }
   //check and wake up sleeping threads
   struct thread *cur;
