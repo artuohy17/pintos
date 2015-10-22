@@ -369,7 +369,32 @@ thread_get_priority (void)
 {
   return thread_current ()->priority;
 }
-
+void thread_add_lock(struct lock *lock){
+   enum intr_level old_level = intr_disable();
+   list_insert_ordered(&thread_current()->locks, &lcok->elem,
+                       lock_priority_large, NULL);
+   if(lock->max_priority > thread_current()->priority){
+      thread_current()->priority = lock->max_priority;
+      thread_test_preemption();
+   }
+   intr_set_level(old_level);
+}
+void thread_remove_lock(struct lock *lock){
+    enum intr_level old_level = intr_disable();
+    list_remove(&lock->elem);
+    thread_update_priority(thread_current());
+    intr_set_level(old_level);
+}
+void thread_donate_priority(struct thread *t){
+    enum intr_level old_level = intr_disalbe();
+    thread_update_priority(t);
+    if(t->status == THREAD_READY){
+      list_remove(&t->elem);
+      list_insert_ordered(&ready_list, &t->elem,
+                          thread_priority_large, NULL);
+    }
+    int_set_level(old_level);
+}
 /* Sets the current thread's nice value to NICE. */
 void
 thread_set_nice (int nice UNUSED) 
@@ -403,7 +428,7 @@ thread_get_recent_cpu (void)
 void thread_test_preemption(void){
     enum intr_level old_level = intr_disable();
     if(!list_empty(&ready_list) && 
-       thread_current->priority < list_entry(list_front(&ready_list,
+       thread_current()->priority < list_entry(list_front(&ready_list),
             struct thread, elem)->priority)
       thread_yield();
     intr_set_level(old_level);
@@ -419,46 +444,46 @@ void thread_mlfqs_increment(void){
 }
 void thread_mlfqs_cpu(struct thread *t){
    ASSERT(thread_mlfqs);
-   ASSERT(t != idel_thread);
+   ASSERT(t != idle_thread);
 
-   int term1 = mult_mixed(load_avg, 2);
-   term1 = FP_DIV(term1, add_mixed(term1, 1));
+   int term1 = FP_MULT_MIX(load_avg, 2);
+   term1 = FP_DIV(term1, FP_ADD_MIX(term1, 1));
    term1 = FP_MULT(term1, t->recent_cpu);
    t->recent_cpu = FP_ADD_MIX(term1, t->nice);
 }
-void thread_mlfqs_update(struct thread *t){
+void thread_mlfqs_priority(struct thread *t){
     if(t == idle_thread)
       return;
 
     ASSERT(thread_mlfqs);
     ASSERT(t != idle_thread);
 
-   fixed_t new_priority = FP_CONST(PRI_MAX);
+   fixed_t new_priority = INT_FP(PRI_MAX);
    new_priority = FP_SUB(new_priority, FP_DIV_MIX(t->recent_cpu, 4));
-   new_priority = FP_SUB_MIX(new priority, 2*t->nice);
-   t->priority = FP_INT_PART(new_priority);
+   new_priority = FP_SUB_MIX(new_priority, 2*t->nice);
+   t->priority = FP_INT(new_priority);
    if(t->priority < PRI_MIN)
      t->priority = PRI_MIN;
    else if(t->priority > PRI_MAX)
      t->priority = PRI_MAX;
 }
 void thread_mlfqs_refresh(void){
-    ASSERT(thead_mlfqs);
+    ASSERT(thread_mlfqs);
     ASSERT(intr_context());
 
     size_t ready_t = list_size(&ready_list);
     if(thread_current() != idle_thread)
-      ready_threads++;
+      ready_t++;
     load_avg = FP_ADD(FP_DIV_MIX(FP_MULT_MIX(load_avg, 59), 60),
-               FP_DIV_MIX(FP_CONST(ready_threads), 60));
+               FP_DIV_MIX(INT_FP(ready_t), 60));
 
     struct thread *t;
-    struct list_elem *e = list_begin(&all_ist);
+    struct list_elem *e = list_begin(&all_list);
     for(; e!= list_end(&all_list); e = list_next(e)){
         t = list_entry(e, struct thread, allelem);
         if(t != idle_thread){
           thread_mlfqs_cpu(t);
-          thread_mlfqs_update(t);
+          thread_mlfqs_priority(t);
         }
     }
 } 

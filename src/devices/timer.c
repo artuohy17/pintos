@@ -188,7 +188,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
     if(ticks % TIMER_FREQ == 0)
        thread_mlfqs_refresh();
     else if(ticks % 4 ==0)
-       thread_mlfqs_priorty(thread_current());
+       thread_mlfqs_priority(thread_current());
   }
   //check and wake up sleeping threads
   struct thread *cur;
