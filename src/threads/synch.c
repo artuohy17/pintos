@@ -117,6 +117,7 @@ sema_up (struct semaphore *sema)
     thread_unblock (list_entry (list_pop_front (&sema->waiters),
                                 struct thread, elem));
   sema->value++;
+  thread_test_preemption();
   intr_set_level (old_level);
 }
 
@@ -372,4 +373,19 @@ cond_broadcast (struct condition *cond, struct lock *lock)
 
   while (!list_empty (&cond->waiters))
     cond_signal (cond, lock);
+}
+bool comp_sema_priority(const struct list_elem *a,
+                        const struct list_elem *b,
+                        void *aux UNUSED){
+   struct thread *t1;
+   struct thread *t2;
+   struct semaphore_elem *s1 = list_entry(a, struct semaphore_elem, elem);
+   struct semaphore_elem *s2 = list_entry(b, struct semaphore_elem, elem);
+
+   t1 = list_entry(list_front(&s1->semaphore.waiters),
+                   struct thread, elem);
+   t2 = list_entry(list_front(&s2->semaphore.waiters),
+                   struct thread, elem);
+
+   return t1->priority > t2->priority;
 }
