@@ -73,7 +73,7 @@ sema_down (struct semaphore *sema)
           thread_donate_priority();
          }
          list_insert_ordered(&sema->waiters, &thread_current()->elem,
-                            comp_thread_priority, NULL);
+                            (list_less_func*)&comp_thread_priority, NULL);
       thread_block ();
     }
   sema->value--;
@@ -120,7 +120,7 @@ sema_up (struct semaphore *sema)
   old_level = intr_disable ();
   if (!list_empty (&sema->waiters))
       {
-       list_sort(&sema->waiters, comp_thread_priority, NULL); 
+       list_sort(&sema->waiters,(list_less_func*)&comp_thread_priority, NULL); 
     thread_unblock (list_entry (list_pop_front (&sema->waiters),
                                 struct thread, elem));
      }
@@ -211,7 +211,7 @@ lock_acquire (struct lock *lock)
      cur->want_lock = lock;
      list_insert_ordered(&lock->holder->locks,
                          &cur->donation_elem,
-                         comp_thread_priority, NULL);
+                        (list_less_func*)&comp_thread_priority, NULL);
    }         
   sema_down (&lock->semaphore);
  
@@ -330,7 +330,7 @@ cond_wait (struct condition *cond, struct lock *lock)
   
   sema_init (&waiter.semaphore, 0);
   list_insert_ordered (&cond->waiters, &waiter.elem,
-                       comp_thread_priority, NULL);
+                       (list_less_func*)&comp_thread_priority, NULL);
   lock_release (lock);
   sema_down (&waiter.semaphore);
   lock_acquire (lock);
@@ -353,7 +353,7 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED)
 
   if (!list_empty (&cond->waiters)) 
      {
-     list_sort(&cond->waiters, comp_thread_priority, NULL);
+     list_sort(&cond->waiters, (list_less_func*)&comp_thread_priority, NULL);
     sema_up (&list_entry (list_pop_front (&cond->waiters),
                           struct semaphore_elem, elem)->semaphore);
      }
@@ -385,8 +385,10 @@ bool comp_sema_priority(const struct list_elem *a,
      return false;
    if(list_empty(&s2->semaphore.waiters))
      return true;
-   list_sort(&s1->semaphore.waiters, comp_thread_priority, NULL);
-   list_sort(&s2->semaphore.waiters, comp_thread_priority, NULL);
+   list_sort(&s1->semaphore.waiters, (list_less_func*)&comp_thread_priority,
+                                      NULL);
+   list_sort(&s2->semaphore.waiters, (list_less_func*)&comp_thread_priority,
+                                      NULL);
 
    t1 = list_entry(list_front(&s1->semaphore.waiters),
                    struct thread, elem);
