@@ -96,11 +96,12 @@ struct thread
     struct list_elem elem;              /* List element. */
     
     int nice;
-    fixed_t recent_cpu;
+    int recent_cpu;
     int64_t sleep_ticks;                /* Ticks used in timersleep to indicate 
                                            when thread is done sleeping. */
     struct lock *want_lock;           /* threads waiting on locks */    
     struct list locks;
+    struct list_elem donation_elem;
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
@@ -137,23 +138,26 @@ void thread_yield (void);
 typedef void thread_action_func (struct thread *t, void *aux);
 void thread_foreach (thread_action_func *, void *);
 
-void thread_add_lock(struct lock*);
-void thread_remove_lock(struct lock*);
+void thread_remove_lock(struct lock *lock);
 
 int thread_get_priority (void);
 void thread_set_priority (int);
-void thread_donate_priority(struct thread*);
-void thread_update_priority(struct thread*);
+
+void thread_donate_priority(void);
+void thread_update_priority(void);
+
 int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
-void thread_test_preemption(void);
+void thread_max_priority(void);
+
 void thread_mlfqs_increment(void);
 void thread_mlfqs_priority(struct thread *t);
 void thread_mlfqs_cpu(struct thread *t);
 void thread_mlfqs_refresh(void);
+void thread_mlfqs_load(void);
 
 bool comp_thread_priority(const struct list_elem *a,
                           const struct list_elem *b,

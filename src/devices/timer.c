@@ -9,6 +9,8 @@
 #include "threads/thread.h"
   
 /* See [8254] for hardware details of the 8254 timer chip. */
+//For BSD 
+#define REFRESH_FREQ 4
 
 #if TIMER_FREQ < 19
 #error 8254 timer requires TIMER_FREQ >= 19
@@ -182,32 +184,32 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
-  enum intr_level old_level = intr_disable();
+  thread_tick();
   
-//  thread_tick();
-  struct list_elem *le;
-  struct thread *t;
+  struct list_elem *le = list_begin(&sleeping);;
 
   if(thread_mlfqs){ //scheduler
     thread_mlfqs_increment();
-    if(ticks % TIMER_FREQ == 0)
+    if(ticks % TIMER_FREQ == 0){
+       thread_mlfqs_load();
        thread_mlfqs_refresh();
-    else if(ticks % 4 ==0)
+    }
+    else if(ticks % 4 ==0){
        thread_mlfqs_priority(thread_current());
-  }
+    }
+   }
   //check and wake up sleeping threads
-  
-  while(!list_empty(&sleeping)){
-       le = list_front(&sleeping);
-       t = list_entry(le, struct thread, elem);
+  while(!list_end(&sleeping)){
+       struct thread *t = list_entry(le, struct thread, elem);
        if(t->sleep_ticks <= ticks){
            list_remove(le);
            thread_unblock(t);
+           le = list_begin(&sleeping);
        }
        else break;
   }
-  thread_tick();
-  intr_set_level(old_level);
+  thread_max_priority();
+  
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
