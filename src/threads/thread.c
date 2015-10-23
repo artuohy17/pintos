@@ -216,7 +216,7 @@ thread_create (const char *name, int priority,
   thread_unblock (t);
 
   old_level = intr_disable();;
-  test_max_priority();
+  thread_max_priority();
   intr_set_level(old_level);
   return tid;
 }
@@ -365,11 +365,9 @@ thread_set_priority (int new_priority)
     is smaller and the current priority is not donated to 
     another thread */
   if(new_priority > old_priority)
-    {
-       thread_donate_priority();
-   } 
+       thread_donate_priority(); 
   if(old_priority > new_priority)
-     test_max_priority();
+     thread_max_priority();
 
    intr_set_level(old_level);
 }
@@ -429,7 +427,7 @@ thread_set_nice (int nice)
   enum intr_level old_level = intr_disable();
   thread_current()->nice = nice;
   thread_mlfqs_priority(thread_current());
-  test_max_priority();
+  thread_max_priority();
   intr_set_level(old_level); 
 }
 
@@ -518,7 +516,7 @@ void thread_mlfqs_load()
   load_avg = FP_ADD(term1, term2);
   ASSERT(load_avg >= 0);
 } 
-void test_max_priority(void)
+void thread_max_priority(void)
 {
   if(list_empty(&ready_list))
     return;
