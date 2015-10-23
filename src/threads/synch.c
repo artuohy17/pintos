@@ -199,11 +199,12 @@ lock_acquire (struct lock *lock)
   enum intr_level old_level;
   struct lock *l1;
   struct thread *cur = thread_current();
-
+  int depth = 0;
   if(!thread_mlfqs && lock->holder != NULL){
      cur->want_lock = lock;
      l1 = lock;
-     while(l1 && cur->priority > l1->max_priority){
+     while(l1 && cur->priority > l1->max_priority 
+           && depth++ < PRIDON_MAX_DEPTH){
          l1->max_priority = cur->priority;
          thread_donate_priority(l1->holder);
          l1 = l1->holder->want_lock;
