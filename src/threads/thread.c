@@ -17,6 +17,8 @@
 #include "devices/timer.h"
 #endif
 
+
+
 /* Random value for struct thread's `magic' member.
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
@@ -215,7 +217,7 @@ thread_create (const char *name, int priority,
   thread_unblock (t);
 
   thread_test_preemption();
-
+  intr_set_level(old_level);
   return tid;
 }
 
@@ -357,8 +359,8 @@ thread_set_priority (int new_priority)
   enum intr_level old_level = intr_disable();
   struct thread *cur = thread_current();
   int old_priority = cur->priority;
- 
   cur->base_priority = new_priority;
+  thread_get_priority();
   /*update priority and test preemption if new priority
     is smaller and the current priority is not donated to 
     another thread */
@@ -374,7 +376,10 @@ thread_set_priority (int new_priority)
 int
 thread_get_priority (void) 
 {
-  return thread_current ()->priority;
+  enum intr_level old_level = intr_disable();
+  int tmp = thread_current()->priority;
+  intr_set_level(old_level);
+  return tmp;
 }
 void thread_add_lock(struct lock *lock){
    enum intr_level old_level = intr_disable();
@@ -435,7 +440,10 @@ int
 thread_get_nice (void) 
 {
   /* Not yet implemented. */
-  return thread_current()->nice;;
+  enum intr_level old_level = intr_disable();
+  int tmp = thread_current()->nice;
+  intr_set_level(old_level);
+  return tmp;
 }
 
 /* Returns 100 times the system load average. */
@@ -443,7 +451,10 @@ int
 thread_get_load_avg (void) 
 {
   /* Not yet implemented. */
-  return FP_ROUND(FP_MULT_MIX(load_avg, 100));;
+  enum intr_level old_level = intr_disable();
+  int tmp = FP_ROUND(FP_MULT_MIX(load_avg, 100));
+  intr_set_level(old_level); 
+ return tmp;
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
@@ -451,7 +462,10 @@ int
 thread_get_recent_cpu (void) 
 {
   /* Not yet implemented. */
-  return FP_ROUND(FP_MULT_MIX(thread_current()->recent_cpu, 100));;
+  enum intr_level old_level = intr_disable();
+  int tmp = FP_ROUND(FP_MULT_MIX(thread_current()->recent_cpu, 100));
+  intr_set_level(old_level);
+  return tmp;
 }
 void thread_test_preemption(void){
     enum intr_level old_level = intr_disable();
